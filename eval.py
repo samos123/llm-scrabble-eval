@@ -1,6 +1,8 @@
 import os
+from collections import Counter
 from openai import OpenAI
 import nltk
+import json
 
 nltk.download("words")
 from nltk.corpus import words as nltk_words
@@ -18,7 +20,6 @@ def can_form_word_from_letters(word, letters):
     Check if 'word' can be formed from the multiset of 'letters'.
     Example: word='cat', letters=['c','a','t','b'] -> True
     """
-    from collections import Counter
 
     word_letter_count = Counter(word.lower())
     letters_count = Counter(letter.lower() for letter in letters)
@@ -71,7 +72,6 @@ def evaluate_model_on_letters(letters, max_words=20):
     print(model_reply)
 
     # Attempt to parse the reply as JSON or fallback if format differs
-    import json
 
     try:
         words = json.loads(model_reply)
