@@ -4,27 +4,31 @@ from openai import OpenAI
 import nltk
 import json
 
+from word_validator import WordValidator
+
 nltk.download("words")
 from nltk.corpus import words as nltk_words
 # Optional: Uncomment and replace with your own key or set via environment variable
 # openai.api_key = "YOUR_OPENAI_API_KEY_HERE"
 
 # If you want to perform dictionary checks using NLTK, you can do:
-# def is_real_english_word(w):
-#     return w.lower() in nltk_words
-# client = OpenAI()
-# model = "gpt-4o-mini"  # or "gpt-4" if you have access
+client = OpenAI()
+model = "gpt-4o-mini"  # or "gpt-4" if you have access
 
-client = OpenAI(
-  api_key=os.environ.get("TOGETHER_API_KEY"),
-  base_url="https://api.together.xyz/v1",
-)
+# client = OpenAI(
+#   api_key=os.environ.get("TOGETHER_API_KEY"),
+#   base_url="https://api.together.xyz/v1",
+# )
 # model = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
 # model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
 # model = "Qwen/Qwen2.5-7B-Instruct-Turbo"
-model = "deepseek-ai/DeepSeek-V3" # best oss model so far
+# model = "deepseek-ai/DeepSeek-V3" # best oss model so far
 # model = "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B" # doesn't work because it thinks as response
 # model = "mistralai/Mistral-7B-Instruct-v0.2" # best oss model so far
+# model = "google/gemma-2-9b-it" # error from togetherai
+# model = "Gryphe/MythoMax-L2-13b"
+
+word_validator = WordValidator()
 
 
 def can_form_word_from_letters(word, letters):
@@ -40,6 +44,34 @@ def can_form_word_from_letters(word, letters):
         if letters_count[letter] < count:
             return False
     return True
+
+
+def extract_json_block(text):
+    """
+    Extracts content between ```json and ``` markers from a string.
+
+    Args:
+        text (str): The input text containing JSON code blocks
+
+    Returns:
+        str: The extracted JSON content or empty string if no match found
+
+    Example:
+        >>> text = "Some text\\n```json\\n{\\"key\\": \\"value\\"}\\n```\\nMore text"
+        >>> extract_json_block(text)
+        '{\\"key\\": \\"value\\"}'
+    """
+    import re
+
+    # Pattern to match content between ```json and ```
+    pattern = r"```json\s*(.*?)\s*```"
+
+    # Use re.DOTALL to make dot match newlines
+    match = re.search(pattern, text, re.DOTALL)
+
+    if match:
+        return match.group(1).strip()
+    return ""
 
 
 def evaluate_model_on_letters(letters, max_words=20):
@@ -70,7 +102,9 @@ def evaluate_model_on_letters(letters, max_words=20):
 
     Do not include the same word twice.
 
-    Do not include ``` in your response and only respond with the json itself.
+    Don't include multiples such as "cats" or "balls"
+
+    Provide your final response using the format "```json" and end with ```
     """
 
     response = client.chat.completions.create(
@@ -90,7 +124,9 @@ def evaluate_model_on_letters(letters, max_words=20):
     # Attempt to parse the reply as JSON or fallback if format differs
 
     try:
-        words = json.loads(model_reply)
+        # Get the content between ```json and ```
+        json_string = extract_json_block(model_reply)
+        words = json.loads(json_string)
         # If the model responded with a string, convert it to a list
         if isinstance(words, str):
             words = [w.strip() for w in words.split(",")]
@@ -112,12 +148,10 @@ def evaluate_model_on_letters(letters, max_words=20):
     for w in unique_words:
         if can_form_word_from_letters(w, letters):
             # also check if it's a real English word using an external dictionary:
-            # if is_real_english_word(w):
-            #     valid_words.append(w)
-            # else:
-            #     print(f"Invalid English word (not in dictionary): {w}")
-
-            valid_words.append(w)
+            if word_validator.is_real_english_word(w):
+                valid_words.append(w)
+            else:
+                print(f"Invalid English word (not in dictionary): {w}")
         else:
             print(f"Invalid word (can't be formed from letters): {w}")
 
