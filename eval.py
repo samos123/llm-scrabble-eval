@@ -22,9 +22,9 @@ client = OpenAI(
 # model = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
 # model = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
 # model = "Qwen/Qwen2.5-7B-Instruct-Turbo"
-# model = "deepseek-ai/DeepSeek-V3" # best oss model so far
+model = "deepseek-ai/DeepSeek-V3" # best oss model so far
 # model = "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B" # doesn't work because it thinks as response
-model = "mistralai/Mistral-7B-Instruct-v0.2" # best oss model so far
+# model = "mistralai/Mistral-7B-Instruct-v0.2" # best oss model so far
 
 
 def can_form_word_from_letters(word, letters):
@@ -60,9 +60,11 @@ def evaluate_model_on_letters(letters, max_words=20):
 
     The words need to be a minimum of 3 letters.
 
+    Prefer to include commonly used words.
+
     Include words that have more letters as well.
 
-    Do not include words that only have a sound. Only include common words.
+    Do not include words that only have a sound.
 
     Do not include abbbreviations. Only include common words.
 
