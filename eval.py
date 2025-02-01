@@ -218,26 +218,6 @@ def generate_random_lowercase_letters(num_letters: int) -> List[str]:
     return [random.choice(string.ascii_lowercase) for _ in range(num_letters)]
 
 
-def evaluate_all_models(number_of_test_cases: int = 10):
-    test_cases = [generate_random_lowercase_letters(24) for _ in range(number_of_test_cases)]
-    results = []
-    for model in together_ai_models[1:2]:
-        evaluator = EvaluatorJsonResponse(model)
-        model_score = 0
-        for letters in test_cases:
-            evaluation = evaluator.evaluate_model_on_letters(letters)
-            print(f"Evaluation for {model}:")
-            print(evaluation)
-            model_score += evaluation.score
-            results.append(evaluation.to_dict())
-            print("\n")
-        print(f"Average score for {model}: {model_score / len(test_cases)}\n")
-    # Append results to results.json
-    with open("results.json", "w") as f:
-        json.dump(results, f, indent=4)
-        print("Results saved to results.json")
-
-
 def can_form_word_from_letters(word, letters):
     """
     Check if 'word' can be formed from the multiset of 'letters'.
@@ -279,6 +259,30 @@ def extract_json_block(text):
     if match:
         return match.group(1).strip()
     return ""
+
+
+def evaluate_all_models(number_of_test_cases: int = 10):
+    test_cases = [
+        generate_random_lowercase_letters(24) for _ in range(number_of_test_cases)
+    ]
+    evaluatorsClasses = [EvaluatorJsonResponse, EvaluatorNewLinePerWord]
+    results = []
+    for evaluatorClass in evaluatorsClasses:
+        for model in together_ai_models:
+            evaluator = evaluatorClass(model)
+            model_score = 0
+            for letters in test_cases:
+                evaluation = evaluator.evaluate_model_on_letters(letters)
+                print(f"Evaluation for {model}:")
+                print(evaluation)
+                model_score += evaluation.score
+                results.append(evaluation.to_dict())
+                print("\n")
+            print(f"Average score for {model}: {model_score / len(test_cases)}\n")
+        # Append results to results.json
+    with open("results.json", "w") as f:
+        json.dump(results, f, indent=4)
+        print("Results saved to results.json")
 
 
 if __name__ == "__main__":

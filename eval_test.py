@@ -24,8 +24,8 @@ def test_evaluator_json_response():
     )
     assert evaluator.model_response_to_words(model_response) == ["cat", "bat", "dog"]
 
-    # evaluation = evaluator.evaluate_model_on_letters(letters, max_words=2)
-    # assert evaluation.score != 0
+    evaluation = evaluator.evaluate_model_on_letters(letters, max_words=2)
+    assert evaluation.score != 0
 
 
 def test_evaluator_new_line_per_word():
@@ -49,3 +49,6 @@ def test_evaluator_new_line_per_word():
         """
     )
     assert evaluator.model_response_to_words(model_response) == ["cat", "bat", "dog"]
+
+    evaluation = evaluator.evaluate_model_on_letters(letters, max_words=2)
+    assert evaluation.score > 0
