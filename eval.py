@@ -54,7 +54,6 @@ class Evaluation:
 
 
 class Evaluator:
-
     def __init__(self, model: str):
         self.word_validator = WordValidator()
         self.client = OpenAI()
@@ -130,7 +129,9 @@ class Evaluator:
             # Print results
             print(f"\nEvaluated words: {unique_words}")
             print(f"Valid words: {valid_words}")
-            print(f"The model found {len(words)} of which {len(unique_words)} were unique.")
+            print(
+                f"The model found {len(words)} of which {len(unique_words)} were unique."
+            )
             print(f"The model found {len(valid_words)} valid words.")
             print(f"Score: {score} / {max_words} possible\n")
             return Evaluation(
@@ -183,6 +184,7 @@ class EvaluatorJsonResponse(Evaluator):
         words = json.loads(json_string)
         return words
 
+
 class EvaluatorNewLinePerWord(Evaluator):
     def get_prompt(self, letters: List[str], max_words: int = 20):
         return dedent(f"""\
@@ -206,7 +208,9 @@ class EvaluatorNewLinePerWord(Evaluator):
 
     def model_response_to_words(self, response: str) -> List[str]:
         # Get the content between <response> and </response>
-        words = response.split("<response>")[1].split("</response>")[0].strip().split("\n")
+        words = (
+            response.split("<response>")[1].split("</response>")[0].strip().split("\n")
+        )
         return words
 
 
