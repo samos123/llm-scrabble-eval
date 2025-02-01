@@ -10,29 +10,18 @@ import random
 
 from word_validator import WordValidator
 
-# Optional: Uncomment and replace with your own key or set via environment variable
-# openai.api_key = "YOUR_OPENAI_API_KEY_HERE"
 
-# If you want to perform dictionary checks using NLTK, you can do:
-# client = OpenAI()
-# model = "gpt-4o-mini"  # or "gpt-4" if you have access
-
-client = OpenAI(
-    api_key=os.environ.get("TOGETHER_API_KEY"),
-    base_url="https://api.together.xyz/v1",
-)
-
-
+# model = "gpt-4o-mini"
 together_ai_models = [
-    "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+    # "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", too bad..
     "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
     "Qwen/Qwen2.5-7B-Instruct-Turbo",
-    "Qwen/Qwen2.5-72B-Instruct-Turbo",  # great model
+    "Qwen/Qwen2.5-72B-Instruct-Turbo",
     "deepseek-ai/DeepSeek-V3",  # best oss model so far
-    "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B",  # doesn't work because it thinks as response
+    # "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B",  # doesn't work because it thinks as response
     "mistralai/Mistral-7B-Instruct-v0.2",  # decent small oss model so far
     # "google/gemma-2-9b-it", # error from togetherai
-    "Gryphe/MythoMax-L2-13b",
+    # "Gryphe/MythoMax-L2-13b",
     "mistralai/Mixtral-8x22B-Instruct-v0.1",
 ]
 
@@ -81,12 +70,14 @@ class Evaluator:
         try:
             prompt = self.get_prompt(letters, max_words=max_words)
 
-            response = client.chat.completions.create(
+            response = self.client.chat.completions.create(
                 model=self.model,  # or "gpt-4" if you have access
                 messages=[
                     {"role": "user", "content": prompt.strip()},
                 ],
                 temperature=0.0,
+                timeout=10.0,
+                max_tokens=500,
             )
 
             # Extract the model's reply
