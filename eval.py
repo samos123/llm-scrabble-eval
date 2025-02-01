@@ -183,6 +183,32 @@ class EvaluatorJsonResponse(Evaluator):
         words = json.loads(json_string)
         return words
 
+class EvaluatorNewLinePerWord(Evaluator):
+    def get_prompt(self, letters: List[str], max_words: int = 20):
+        return dedent(f"""\
+        You are a helpful assistant that can unscramble letters to form English words.
+        Given these letters: {", ".join(letters)}.
+        Generate up to {max_words} English words that can be made from those letters.
+        The words need to be a minimum of 3 letters.
+        Prefer to include commonly used words.
+        Include words that have more letters as well.
+        Do not include words that only have a sound.
+        Do not include abbbreviations.
+        Do not include the same word twice.
+        Don't include multiples such as "cats" or "balls".
+
+        Your final response should use the following format:
+        <response>
+        word1
+        word2
+        </response>
+        """)
+
+    def model_response_to_words(self, response: str) -> List[str]:
+        # Get the content between <response> and </response>
+        words = response.split("<response>")[1].split("</response>")[0].strip().split("\n")
+        return words
+
 
 def generate_random_lowercase_letters(num_letters: int) -> List[str]:
     return [random.choice(string.ascii_lowercase) for _ in range(num_letters)]
