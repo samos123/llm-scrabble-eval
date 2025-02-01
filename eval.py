@@ -218,8 +218,8 @@ def generate_random_lowercase_letters(num_letters: int) -> List[str]:
     return [random.choice(string.ascii_lowercase) for _ in range(num_letters)]
 
 
-def evaluate_all_models():
-    test_cases = [generate_random_lowercase_letters(24) for _ in range(1)]
+def evaluate_all_models(number_of_test_cases: int = 10):
+    test_cases = [generate_random_lowercase_letters(24) for _ in range(number_of_test_cases)]
     results = []
     for model in together_ai_models[1:2]:
         evaluator = EvaluatorJsonResponse(model)
