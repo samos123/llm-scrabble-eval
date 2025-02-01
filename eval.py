@@ -190,6 +190,10 @@ def evaluate_all_models():
             results.append(evaluation)
             print("\n")
         print("Average score for {model}: {model_score / len(test_cases)}\n")
+    # Append results to results.json
+    with open("results.json", "w") as f:
+        json.dump(results, f, indent=4)
+        print("Results saved to results.json")
 
 
 def can_form_word_from_letters(word, letters):
@@ -258,7 +262,4 @@ if __name__ == "__main__":
     print(f"len(letters): {len(letters)}")
     print(f"input letters: {letters}")
 
-    result = EvaluatorJsonResponse(
-        model=together_ai_models[-1]
-    ).evaluate_model_on_letters(letters, max_words=20)
-    print(result)
+    evaluate_all_models()
