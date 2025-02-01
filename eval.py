@@ -2,7 +2,7 @@ import os
 from collections import Counter
 from openai import OpenAI
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import List
 from textwrap import dedent
 import string
@@ -49,9 +49,11 @@ class Evaluation:
     valid_words: List[str]
     score: int
 
+    def to_dict(self):
+        return asdict(self)
+
 
 class Evaluator:
-    name: str = "Evaluator"
 
     def __init__(self, model: str):
         self.word_validator = WordValidator()
@@ -77,67 +79,77 @@ class Evaluator:
         3. Validates the words.
         4. Computes a simple score.
         """
-        prompt = self.get_prompt(letters, max_words=max_words)
+        try:
+            prompt = self.get_prompt(letters, max_words=max_words)
 
-        response = client.chat.completions.create(
-            model=self.model,  # or "gpt-4" if you have access
-            messages=[
-                {"role": "user", "content": prompt.strip()},
-            ],
-            temperature=0.0,
-        )
+            response = client.chat.completions.create(
+                model=self.model,  # or "gpt-4" if you have access
+                messages=[
+                    {"role": "user", "content": prompt.strip()},
+                ],
+                temperature=0.0,
+            )
 
-        # Extract the model's reply
-        model_reply = response.choices[0].message.content
+            # Extract the model's reply
+            model_reply = response.choices[0].message.content
 
-        print("Raw model reply:")
-        print(model_reply)
-        if not model_reply:
-            raise ValueError("No response from the model")
+            print("Raw model reply:")
+            print(model_reply)
+            if not model_reply:
+                raise ValueError("No response from the model")
 
-        # Attempt to parse the reply as JSON or fallback if format differs
-        words = self.model_response_to_words(model_reply)
+            # Attempt to parse the reply as JSON or fallback if format differs
+            words = self.model_response_to_words(model_reply)
 
-        # Keep only unique words (case-insensitive uniqueness)
-        unique_words = []
-        lower_seen = set()
-        for w in words:
-            lw = w.lower().strip()
-            if lw not in lower_seen:
-                lower_seen.add(lw)
-                unique_words.append(w.strip())
+            # Keep only unique words (case-insensitive uniqueness)
+            unique_words = []
+            lower_seen = set()
+            for w in words:
+                lw = w.lower().strip()
+                if lw not in lower_seen:
+                    lower_seen.add(lw)
+                    unique_words.append(w.strip())
 
-        # Validate each word (only checking letter usage here)
-        valid_words = []
-        for w in unique_words:
-            if can_form_word_from_letters(w, letters):
-                # also check if it's a real English word using an external dictionary:
-                if word_validator.is_real_english_word(w):
-                    valid_words.append(w)
+            # Validate each word (only checking letter usage here)
+            valid_words = []
+            for w in unique_words:
+                if can_form_word_from_letters(w, letters):
+                    # also check if it's a real English word using an external dictionary:
+                    if word_validator.is_real_english_word(w):
+                        valid_words.append(w)
+                    else:
+                        print(f"Invalid English word (not in dictionary): {w}")
                 else:
-                    print(f"Invalid English word (not in dictionary): {w}")
-            else:
-                print(f"Invalid word (can't be formed from letters): {w}")
+                    print(f"Invalid word (can't be formed from letters): {w}")
 
-        # Compute scoring: +1 for each valid unique word
-        # If you want more nuanced scoring, you can adjust this logic
-        score = len(valid_words)
+            # Compute scoring: +1 for each valid unique word
+            # If you want more nuanced scoring, you can adjust this logic
+            # In some cases the model predicts more than 20 valid words so need to do min.
+            score = min(max_words, len(valid_words))
 
-        # Print results
-        print(f"\nEvaluated words: {unique_words}")
-        print(f"Valid words: {valid_words}")
-        print(f"The model found {len(words)} of which {len(unique_words)} were unique.")
-        print(f"The model found {len(valid_words)} valid words.")
-        print(f"Score: {score} / {max_words} possible\n")
-
-        return Evaluation(
-            evaluator_name=self.__class__.__name__,
-            model=self.model,
-            letters=letters,
-            model_reply=model_reply,
-            valid_words=valid_words,
-            score=score,
-        )
+            # Print results
+            print(f"\nEvaluated words: {unique_words}")
+            print(f"Valid words: {valid_words}")
+            print(f"The model found {len(words)} of which {len(unique_words)} were unique.")
+            print(f"The model found {len(valid_words)} valid words.")
+            print(f"Score: {score} / {max_words} possible\n")
+            return Evaluation(
+                evaluator_name=self.__class__.__name__,
+                model=self.model,
+                letters=letters,
+                model_reply=model_reply,
+                valid_words=valid_words,
+                score=score,
+            )
+        except Exception as e:
+            return Evaluation(
+                evaluator_name=self.__class__.__name__,
+                model=self.model,
+                letters=letters,
+                model_reply=f"Exception {e} occured during evaluation.",
+                valid_words=[],
+                score=0,
+            )
 
 
 class EvaluatorJsonResponse(Evaluator):
@@ -177,9 +189,9 @@ def generate_random_lowercase_letters(num_letters: int) -> List[str]:
 
 
 def evaluate_all_models():
-    test_cases = [generate_random_lowercase_letters(24) for _ in range(5)]
+    test_cases = [generate_random_lowercase_letters(24) for _ in range(1)]
     results = []
-    for model in together_ai_models:
+    for model in together_ai_models[1:2]:
         evaluator = EvaluatorJsonResponse(model)
         model_score = 0
         for letters in test_cases:
@@ -187,9 +199,9 @@ def evaluate_all_models():
             print(f"Evaluation for {model}:")
             print(evaluation)
             model_score += evaluation.score
-            results.append(evaluation)
+            results.append(evaluation.to_dict())
             print("\n")
-        print("Average score for {model}: {model_score / len(test_cases)}\n")
+        print(f"Average score for {model}: {model_score / len(test_cases)}\n")
     # Append results to results.json
     with open("results.json", "w") as f:
         json.dump(results, f, indent=4)
@@ -240,26 +252,4 @@ def extract_json_block(text):
 
 
 if __name__ == "__main__":
-    # Example usage
-    letters = [
-        "a",
-        "c",
-        "a",
-        "t",
-        "b",
-        "s",
-        "t",
-        "e",
-        "f",
-        "x",
-        "z",
-        "d",
-        "o",
-        "p",
-        "l",
-        "u",
-    ]
-    print(f"len(letters): {len(letters)}")
-    print(f"input letters: {letters}")
-
     evaluate_all_models()
