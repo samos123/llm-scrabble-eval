@@ -66,6 +66,8 @@ def evaluate_model_on_letters(letters, max_words=20):
 
     Do not include abbbreviations. Only include common words.
 
+    Do not include the same word twice.
+
     Do not include ``` in your response and only respond with the json itself.
     """
 
