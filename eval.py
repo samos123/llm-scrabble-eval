@@ -7,22 +7,30 @@ from typing import List
 from textwrap import dedent
 import string
 import random
+import time
 
 from word_validator import WordValidator
+
+local_models = [
+    # "llama-3.1-supernova-lite-l4", # poor results
+    # "deepseek-r1-distill-llama-8b-l4", # no results
+    # "phi-4-fp8-l4", # broken
+    "phi-4-ollama-l4", # best slm
+]
 
 
 # model = "gpt-4o-mini"
 together_ai_models = [
     # "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", too bad..
-    "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
-    "Qwen/Qwen2.5-7B-Instruct-Turbo",
-    "Qwen/Qwen2.5-72B-Instruct-Turbo",
-    "deepseek-ai/DeepSeek-V3",  # best oss model so far
+    # "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", # best model so far
+    # "Qwen/Qwen2.5-7B-Instruct-Turbo",
+    # "Qwen/Qwen2.5-72B-Instruct-Turbo",
+    # "deepseek-ai/DeepSeek-V3",  # best oss model so far
     # "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B",  # doesn't work because it thinks as response
-    "mistralai/Mistral-7B-Instruct-v0.2",  # decent small oss model so far
+    # "mistralai/Mistral-7B-Instruct-v0.2",  # decent small oss model so far
     # "google/gemma-2-9b-it", # error from togetherai
     # "Gryphe/MythoMax-L2-13b",
-    "mistralai/Mixtral-8x22B-Instruct-v0.1",
+    # "mistralai/Mixtral-8x22B-Instruct-v0.1",
 ]
 
 
@@ -47,10 +55,15 @@ class Evaluator:
         self.word_validator = WordValidator()
         self.client = OpenAI()
         together_api_key = os.environ.get("TOGETHER_API_KEY")
-        if together_api_key:
+        if together_api_key and model in together_ai_models:
             self.client = OpenAI(
                 api_key=together_api_key,
                 base_url="https://api.together.xyz/v1",
+            )
+        if model in local_models:
+            self.client = OpenAI(
+                base_url="http://localhost:8000/openai/v1",
+                api_key="ignored",
             )
         self.model = model
 
@@ -70,15 +83,29 @@ class Evaluator:
         try:
             prompt = self.get_prompt(letters, max_words=max_words)
 
-            response = self.client.chat.completions.create(
-                model=self.model,  # or "gpt-4" if you have access
-                messages=[
-                    {"role": "user", "content": prompt.strip()},
-                ],
-                temperature=0.0,
-                timeout=10.0,
-                max_tokens=500,
-            )
+            # Added retry logic for 429 errors
+            max_retries = 10  # Number of retry attempts
+            retry_delay = 10  # Initial delay in seconds
+
+            for attempt in range(max_retries + 1):
+                try:
+                    response = self.client.chat.completions.create(
+                        model=self.model,
+                        messages=[
+                            {"role": "user", "content": prompt.strip()},
+                        ],
+                        temperature=0.0,
+                        timeout=180.0,
+                        max_tokens=5000,
+                    )
+                    break  # Success - break out of retry loop
+                except Exception as e:
+                    if attempt < max_retries and "429" in str(e):
+                        print(f"Rate limit exceeded (429). Retrying in {retry_delay} seconds...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2  # Exponential backoff
+                    else:
+                        raise  # Re-raise the exception if not recoverable
 
             # Extract the model's reply
             model_reply = response.choices[0].message.content
@@ -259,7 +286,7 @@ def evaluate_all_models(number_of_test_cases: int = 10):
     evaluatorsClasses = [EvaluatorJsonResponse, EvaluatorNewLinePerWord]
     results = []
     for evaluatorClass in evaluatorsClasses:
-        for model in together_ai_models:
+        for model in together_ai_models + local_models:
             evaluator = evaluatorClass(model)
             model_score = 0
             for letters in test_cases:
