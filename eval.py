@@ -21,7 +21,11 @@ local_models = [
     # "granite-3.1-dense-ollama-l4",
     # "granite-3.1-8b-fp8-dynamic-l4",
     # "granite-3.1-8b-l4", # slow
-    "llama-3.1-tulu-3-8b-l4",
+    # "llama-3.1-tulu-3-8b-l4",
+    # "qwen2.5-7b-instruct-l4", # very slow, probably no EOS token
+    # "gemma-2-9b-it-fp8-l4", # bad responses
+    # "gemma-9b-ollama-l4", # ~8/20
+
 ]
 
 
@@ -103,7 +107,7 @@ class Evaluator:
                         ],
                         temperature=0.0,
                         timeout=180.0,
-                        max_tokens=5000,
+                        max_tokens=1000,
                     )
                     end_time = time.time()  # Record time after API call
                     print(f"Model response time: {end_time - start_time:.2f} seconds")
