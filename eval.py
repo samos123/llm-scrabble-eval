@@ -25,7 +25,7 @@ local_models = [
     # "qwen2.5-7b-instruct-l4", # very slow, probably no EOS token
     # "gemma-2-9b-it-fp8-l4", # bad responses
     # "gemma-9b-ollama-l4", # ~8/20
-
+    # "gemma-27b-ollama-l4", #~12/20
 ]
 
 
