@@ -18,7 +18,10 @@ local_models = [
     # "phi-4-ollama-l4", # best slm
     # "phi-4-bnb-4bit-l4", poor responses
     # "phi-4-l4",
-    "granite-3.1-dense-ollama-l4",
+    # "granite-3.1-dense-ollama-l4",
+    # "granite-3.1-8b-fp8-dynamic-l4",
+    # "granite-3.1-8b-l4", # slow
+    "llama-3.1-tulu-3-8b-l4",
 ]
 
 
