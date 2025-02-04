@@ -17,7 +17,8 @@ local_models = [
     # "phi-4-fp8-l4", # broken
     # "phi-4-ollama-l4", # best slm
     # "phi-4-bnb-4bit-l4", poor responses
-    "phi-4-l4",
+    # "phi-4-l4",
+    "granite-3.1-dense-ollama-l4",
 ]
 
 
