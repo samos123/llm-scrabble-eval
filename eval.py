@@ -15,7 +15,9 @@ local_models = [
     # "llama-3.1-supernova-lite-l4", # poor results
     # "deepseek-r1-distill-llama-8b-l4", # no results
     # "phi-4-fp8-l4", # broken
-    "phi-4-ollama-l4", # best slm
+    # "phi-4-ollama-l4", # best slm
+    # "phi-4-bnb-4bit-l4", poor responses
+    "phi-4-l4",
 ]
 
 
@@ -89,6 +91,7 @@ class Evaluator:
 
             for attempt in range(max_retries + 1):
                 try:
+                    start_time = time.time()  # Start timing before API call
                     response = self.client.chat.completions.create(
                         model=self.model,
                         messages=[
@@ -98,7 +101,9 @@ class Evaluator:
                         timeout=180.0,
                         max_tokens=5000,
                     )
-                    break  # Success - break out of retry loop
+                    end_time = time.time()  # Record time after API call
+                    print(f"Model response time: {end_time - start_time:.2f} seconds")
+                    break
                 except Exception as e:
                     if attempt < max_retries and "429" in str(e):
                         print(f"Rate limit exceeded (429). Retrying in {retry_delay} seconds...")
